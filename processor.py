@@ -10,7 +10,7 @@ class NewsProcessor:
         """Initialize the Gemini client."""
         # Using the new google-genai SDK 
         self.client = genai.Client(api_key=api_key)
-        self.model = 'gemini-1.5-flash'  # Use 1.5-flash for generous 1500 RPD free tier limit
+        self.model = 'gemini-2.5-flash-lite'  # Use 2.5-flash-lite for generous 1500 RPD free tier limit
 
     def process_article(self, article: Dict[str, Any]) -> Dict[str, Any]:
         """Categorize and summarize a single article."""

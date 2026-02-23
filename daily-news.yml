@@ -58,6 +58,7 @@ jobs:
           GMAIL_TOKEN_B64: ${{ secrets.GMAIL_TOKEN_B64 }}
           GMAIL_CREDENTIALS_B64: ${{ secrets.GMAIL_CREDENTIALS_B64 }}
         run: |
+          echo "$GMAIL_TOKEN_B64" | base64 --decode > token.json
           echo "$GMAIL_CREDENTIALS_B64" | base64 --decode > credentials.json
           python main.py --weekly
 
