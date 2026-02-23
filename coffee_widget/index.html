@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Coffee News & Market</title>
+    <!-- Modern Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+
+<body>
+    <div class="app-container glass-panel">
+        <header class="app-header">
+            <div class="logo-container">
+                <span class="logo-emoji">☕</span>
+                <h1 class="logo-text">Coffee <span class="accent">Daily</span></h1>
+            </div>
+            <button id="refresh-btn" class="icon-btn" title="Refresh Data">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l5.67-5.67" />
+                </svg>
+            </button>
+        </header>
+
+        <!-- Market Prices Section (Futures) -->
+        <section class="market-section">
+            <h2 class="section-title">Global Market <span class="live-indicator">LIVE</span></h2>
+            <div class="price-cards">
+
+                <!-- Arabica Card -->
+                <div class="price-card arabica" id="arabica-card">
+                    <div class="card-header">
+                        <span class="commodity-name">Arabica (KC=F)</span>
+                        <span class="commodity-unit">USc/lb</span>
+                    </div>
+                    <div class="price-body">
+                        <div class="main-price" id="arabica-price">--.--</div>
+                        <div class="price-change neutral" id="arabica-change">
+                            <span class="change-icon">~</span>
+                            <span class="change-value">--.--</span>
+                            <span class="change-pct">(--%)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Robusta Card -->
+                <div class="price-card robusta" id="robusta-card">
+                    <div class="card-header">
+                        <span class="commodity-name">Robusta (RC=F)</span>
+                        <span class="commodity-unit">USD/MT</span>
+                    </div>
+                    <div class="price-body">
+                        <div class="main-price" id="robusta-price">--.--</div>
+                        <div class="price-change neutral" id="robusta-change">
+                            <span class="change-icon">~</span>
+                            <span class="change-value">--.--</span>
+                            <span class="change-pct">(--%)</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="last-updated" id="market-updated">Last Updated: --:--</div>
+        </section>
+
+        <!-- News Section -->
+        <section class="news-section">
+            <h2 class="section-title">Latest News</h2>
+            <div class="news-container" id="news-container">
+                <!-- News items will be injected here via JS -->
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Loading latest articles...</p>
+                </div>
+            </div>
+            <div class="last-updated" id="news-updated">Generated: --:--</div>
+        </section>
+
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/coffee_widget/sw.js')
+                    .then(registration => console.log('SW registered'))
+                    .catch(err => console.log('SW registration failed', err));
+            });
+        }
+    </script>
+</body>
+
+</html>

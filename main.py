@@ -99,6 +99,24 @@ def main():
          
          notifier.send_email(subject, html_content, is_dry_run=args.dry_run)
          
+         # --- NEW: Export to JSON for the Widget ---
+         import json
+         from datetime import datetime
+         print("\n💾 ウィジェット用にJSONデータを出力します...")
+         
+         # Create a public directory if it doesn't exist
+         os.makedirs("public", exist_ok=True)
+         
+         widget_data = {
+             "updated_at": datetime.now().isoformat(),
+             "is_weekly": args.weekly,
+             "articles": processed_articles
+         }
+         
+         with open("public/news.json", "w", encoding="utf-8") as f:
+             json.dump(widget_data, f, ensure_ascii=False, indent=2)
+         print("✅ 'public/news.json' を保存しました。")
+         
     except Exception as e:
          print(f"❌ メールの作成または送信に失敗しました: {e}")
          sys.exit(1)
