@@ -44,7 +44,7 @@ class NewsProcessor:
         """
 
         max_retries = 3
-        base_delay = 2
+        base_delay = 35 # Google's rate limit often requires at least a 30-second wait
 
         for attempt in range(max_retries):
             try:
@@ -85,8 +85,8 @@ class NewsProcessor:
             except Exception as e:
                 print(f"⚠️ Gemini processing error for '{title}' (Attempt {attempt + 1}/{max_retries}): {e}")
                 if attempt < max_retries - 1:
-                    sleep_time = base_delay * (2 ** attempt) # Exponential backoff: 2s, 4s...
-                    print(f"   Retrying in {sleep_time} seconds...")
+                    sleep_time = base_delay * (attempt + 1) # 35s, 70s...
+                    print(f"   API制限に到達しました。{sleep_time}秒 待機してから再試行します...")
                     time.sleep(sleep_time)
                 else:
                     print(f"❌ Gemini processing failed after {max_retries} attempts.")
