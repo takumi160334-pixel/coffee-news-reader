@@ -65,6 +65,12 @@ jobs:
           echo "$GMAIL_CREDENTIALS_B64" | base64 --decode > credentials.json
           python main.py --weekly
 
+      - name: 準備: ウィジェットとデータをまとめる
+        run: |
+          mkdir -p public/coffee_widget
+          cp -r coffee_widget/* public/coffee_widget/ || true
+          # We also need to copy the manifest and sw to the right place if needed, or just let them live inside coffee_widget.
+
       - name: 生成されたデータの公開 (GitHub Pagesへ)
         uses: peaceiris/actions-gh-pages@v4
         with:
