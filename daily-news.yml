@@ -17,6 +17,9 @@ on:
           - daily
           - weekly
 
+permissions:
+  contents: write
+
 jobs:
   run-daily-news:
     runs-on: ubuntu-latest
