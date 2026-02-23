@@ -2,6 +2,7 @@ import os
 from google import genai
 from google.genai import types
 from typing import Dict, Any
+import time
 import config
 
 class NewsProcessor:
@@ -42,43 +43,55 @@ class NewsProcessor:
         新しい焙煎機の熱風制御システムが発表されました。これにより焙煎のプロファイルがより精密になり、特に浅煎りでの風味が向上すると期待されています。
         """
 
-        try:
-            response = self.client.models.generate_content(
-                model=self.model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=config.GEMINI_SYSTEM_PROMPT,
-                    temperature=0.2, # Low temperature for more deterministic categorization
+        max_retries = 3
+        base_delay = 2
+
+        for attempt in range(max_retries):
+            try:
+                response = self.client.models.generate_content(
+                    model=self.model,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=config.GEMINI_SYSTEM_PROMPT,
+                        temperature=0.2, # Low temperature for more deterministic categorization
+                    )
                 )
-            )
-            
-            result_text = response.text.strip().split("\n")
-            
-            category_index = 0  # Default to 0 (Uncategorized if fails)
-            summary = "要約に失敗しました。"
-            
-            if len(result_text) >= 1:
-                # Try to parse the first line as a number between 1 and 7
-                try:
-                    cat_num = int(result_text[0].strip())
-                    if 1 <= cat_num <= 7:
-                        # 0-indexed for our config list
-                        category_index = cat_num - 1 
-                except ValueError:
-                    print(f"Failed to parse category from: {result_text[0]}")
-                    
-            if len(result_text) >= 2:
-                # Join the rest of the lines as the summary
-                summary = "\n".join(result_text[1:]).strip()
                 
-            # Add processed data to the article dict
-            article['category'] = config.CATEGORIES[category_index]
-            article['summary'] = summary
-            
-            return article
-            
-        except Exception as e:
-            print(f"⚠️ Gemini processing error for '{title}': {e}")
-            article['category'] = config.CATEGORIES[0] # Default to top news
-            article['summary'] = "Gemini APIエラーのため要約できませんでした。"
-            return article
+                result_text = response.text.strip().split("\n")
+                
+                category_index = 0  # Default to 0 (Uncategorized if fails)
+                summary = "要約に失敗しました。"
+                
+                if len(result_text) >= 1:
+                    # Try to parse the first line as a number between 1 and 7
+                    try:
+                        cat_num = int(result_text[0].strip())
+                        if 1 <= cat_num <= 7:
+                            # 0-indexed for our config list
+                            category_index = cat_num - 1 
+                    except ValueError:
+                        print(f"Failed to parse category from: {result_text[0]}")
+                        
+                if len(result_text) >= 2:
+                    # Join the rest of the lines as the summary
+                    summary = "\n".join(result_text[1:]).strip()
+                    
+                # Add processed data to the article dict
+                article['category'] = config.CATEGORIES[category_index]
+                article['summary'] = summary
+                
+                return article
+                
+            except Exception as e:
+                print(f"⚠️ Gemini processing error for '{title}' (Attempt {attempt + 1}/{max_retries}): {e}")
+                if attempt < max_retries - 1:
+                    sleep_time = base_delay * (2 ** attempt) # Exponential backoff: 2s, 4s...
+                    print(f"   Retrying in {sleep_time} seconds...")
+                    time.sleep(sleep_time)
+                else:
+                    print(f"❌ Gemini processing failed after {max_retries} attempts.")
+                    
+        # Fallback return if all retries fail
+        article['category'] = config.CATEGORIES[0] # Default to top news
+        article['summary'] = "Gemini APIエラーのため要約できませんでした。"
+        return article
