@@ -69,17 +69,10 @@ def main():
     # 3. Process with Gemini
     print(f"\n🧠 2. Gemini AI で記事の要約と分類を開始します... ({len(all_articles)}件)")
     processor = NewsProcessor(api_key=api_key)
-    processed_articles = []
     
-    for i, article in enumerate(all_articles, 1):
-         print(f"  [{i}/{len(all_articles)}] {article['title']}")
-         processed = processor.process_article(article)
-         processed_articles.append(processed)
-         
-         # Google Gemini API Free Tier requires a strict limit of 15 Requests Per Minute (RPM)
-         if i < len(all_articles):
-              time.sleep(15) # 60 seconds / 4 requests = 15 seconds per request. Extremely safe margin.
-         
+    # NEW: Send all articles to the new chunked batch processor
+    processed_articles = processor.process_articles_in_chunks(all_articles, chunk_size=20)
+    
     # 4. Format and Send Email
     print("\n📧 3. ニュースレターを作成し送信します...")
     try:
