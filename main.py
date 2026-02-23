@@ -13,6 +13,7 @@ import config
 from fetchers import RSSFetcher, GmailFetcher
 from processor import NewsProcessor
 from notifier import EmailNotifier
+import time
 
 def main():
     # Setup Argument Parser
@@ -74,6 +75,11 @@ def main():
          print(f"  [{i}/{len(all_articles)}] {article['title']}")
          processed = processor.process_article(article)
          processed_articles.append(processed)
+         
+         # Google Gemini API Free Tier has a limit of 15 Requests Per Minute (RPM)
+         # We need to wait a bit between requests to avoid 429 RESOURCE_EXHAUSTED errors
+         if i < len(all_articles):
+              time.sleep(4.1) # 60 seconds / 15 requests = 4 seconds per request. Using 4.1 to be safe.
          
     # 4. Format and Send Email
     print("\n📧 3. ニュースレターを作成し送信します...")
