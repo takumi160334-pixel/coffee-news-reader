@@ -83,15 +83,21 @@ class NewsProcessor:
                 return article
                 
             except Exception as e:
-                print(f"⚠️ Gemini processing error for '{title}' (Attempt {attempt + 1}/{max_retries}): {e}")
+                error_msg = str(e)
+                print(f"⚠️ Gemini processing error for '{title}' (Attempt {attempt + 1}/{max_retries}): {error_msg}")
                 if attempt < max_retries - 1:
-                    sleep_time = base_delay * (attempt + 1) # 35s, 70s...
-                    print(f"   API制限に到達しました。{sleep_time}秒 待機してから再試行します...")
+                    # If it's a rate limit (429), wait much longer
+                    if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+                        sleep_time = 65  # Wait more than a full minute to clear RPM window
+                    else:
+                        sleep_time = base_delay * (attempt + 1)
+                    
+                    print(f"   API制限などに到達しました。{sleep_time}秒 待機してから再試行します...")
                     time.sleep(sleep_time)
                 else:
                     print(f"❌ Gemini processing failed after {max_retries} attempts.")
                     
         # Fallback return if all retries fail
         article['category'] = config.CATEGORIES[0] # Default to top news
-        article['summary'] = "Gemini APIエラーのため要約できませんでした。"
+        article['summary'] = "自動要約に失敗しました。"
         return article

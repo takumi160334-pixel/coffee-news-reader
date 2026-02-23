@@ -76,9 +76,9 @@ def main():
          processed = processor.process_article(article)
          processed_articles.append(processed)
          
-         # Google Gemini API Free Tier has a limit of 15 Requests Per Minute (RPM)
+         # Google Gemini API Free Tier requires a strict limit of 15 Requests Per Minute (RPM)
          if i < len(all_articles):
-              time.sleep(6) # 60 seconds / 10 requests = 6 seconds per request. Very safe margin.
+              time.sleep(15) # 60 seconds / 4 requests = 15 seconds per request. Extremely safe margin.
          
     # 4. Format and Send Email
     print("\n📧 3. ニュースレターを作成し送信します...")
