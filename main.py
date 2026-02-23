@@ -96,6 +96,7 @@ def main():
          
     except Exception as e:
          print(f"❌ メールの作成または送信に失敗しました: {e}")
+         sys.exit(1)
 
     print("\n✅ すべての処理が完了しました！")
 
