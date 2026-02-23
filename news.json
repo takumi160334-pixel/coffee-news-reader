@@ -1,0 +1,12 @@
+{
+    "updated_at": "2026-02-23T12:00:00.000000",
+    "is_weekly": false,
+    "articles": [
+        {
+            "title": "Welcome to Coffee Daily",
+            "summary": "ウィジェットの表示テストに成功しました！この後、本来の自動プログラムが実行されると、最新のニュースに自動で切り替わります。",
+            "link": "https://github.com",
+            "category": "1. 今週の要チェック記事（Top News）"
+        }
+    ]
+}
