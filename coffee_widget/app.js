@@ -100,11 +100,18 @@ async function fetchAndRenderData() {
                         const meta = data.market_data.arabica;
                         const prevClose = meta.chartPreviousClose || meta.previousClose;
                         updateCommodityUI('KC=F', meta.regularMarketPrice, meta.regularMarketPrice - prevClose, ((meta.regularMarketPrice - prevClose) / prevClose) * 100);
+                        document.getElementById('arabica-card').style.display = 'flex';
+                    } else {
+                        document.getElementById('arabica-card').style.display = 'none';
                     }
+
                     if (data.market_data.robusta) {
                         const meta = data.market_data.robusta;
                         const prevClose = meta.chartPreviousClose || meta.previousClose;
                         updateCommodityUI('RC=F', meta.regularMarketPrice, meta.regularMarketPrice - prevClose, ((meta.regularMarketPrice - prevClose) / prevClose) * 100);
+                        document.getElementById('robusta-card').style.display = 'flex';
+                    } else {
+                        document.getElementById('robusta-card').style.display = 'none';
                     }
                 }
             } catch (marketErr) {
