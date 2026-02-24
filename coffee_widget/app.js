@@ -1,8 +1,6 @@
 // Configuration
 // In production, this URL will point to the GitHub Pages URL of the user
-// e.g., 'https://takumi.github.io/coffee_news_reader/news.json'
-const NEWS_JSON_URL = '../public/news.json'; // using local path for dev testing
-
+// Fetching logic below attempts multiple paths seamlessly.
 // Financial API Proxy endpoints to bypass CORS for client-side fetching
 // Using Yahoo Finance via a public proxy/API wrapper for demonstration purposes
 const API_URL_ARABICA = 'https://query1.finance.yahoo.com/v8/finance/chart/KC=F?interval=1d';
@@ -88,13 +86,15 @@ async function fetchMarketData() {
             // Process Arabica
             if (arabicaData.chart.result) {
                 const meta = arabicaData.chart.result[0].meta;
-                updateCommodityUI('KC=F', meta.regularMarketPrice, meta.regularMarketPrice - meta.previousClose, ((meta.regularMarketPrice - meta.previousClose) / meta.previousClose) * 100);
+                const prevClose = meta.chartPreviousClose || meta.previousClose;
+                updateCommodityUI('KC=F', meta.regularMarketPrice, meta.regularMarketPrice - prevClose, ((meta.regularMarketPrice - prevClose) / prevClose) * 100);
             }
 
             // Process Robusta
             if (robustaData.chart.result) {
                 const meta = robustaData.chart.result[0].meta;
-                updateCommodityUI('RC=F', meta.regularMarketPrice, meta.regularMarketPrice - meta.previousClose, ((meta.regularMarketPrice - meta.previousClose) / meta.previousClose) * 100);
+                const prevClose = meta.chartPreviousClose || meta.previousClose;
+                updateCommodityUI('RC=F', meta.regularMarketPrice, meta.regularMarketPrice - prevClose, ((meta.regularMarketPrice - prevClose) / prevClose) * 100);
             }
 
             marketUpdatedEl.textContent = `Market Data: ${formatTime(new Date())}`;
@@ -117,16 +117,20 @@ async function fetchNewsData() {
     `;
 
     try {
-        // In local development, if fetching the local file fails due to CORS (file://), 
-        // fallback to just showing it's a demo.
         let response;
-        try {
-            response = await fetch(NEWS_JSON_URL + "?t=" + new Date().getTime()); // cache buster
-        } catch {
-            response = { ok: false };
+        // Try multiple paths to support both production (GH Pages) and local dev
+        const possibleUrls = ['../news.json', '../public/news.json', './news.json'];
+
+        for (const url of possibleUrls) {
+            try {
+                response = await fetch(url + "?t=" + new Date().getTime()); // cache buster
+                if (response.ok) break;
+            } catch {
+                continue;
+            }
         }
 
-        if (response.ok) {
+        if (response && response.ok) {
             const data = await response.json();
             renderNews(data.articles);
 
