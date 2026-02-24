@@ -60,59 +60,13 @@ function updateCommodityUI(ticker, price, change, percent) {
 }
 
 /**
- * Fetch Market Data (Futures Prices)
- * Note: Direct fetching from Yahoo Finance in browser might fail due to CORS. 
- * In a real production environment without a proxy, we'd use a dedicated stock API service.
- * Here we use an alternate free public proxy pattern if direct fails.
+ * Fetch and Render Data from our generated JSON
  */
-async function fetchMarketData() {
-    try {
-        // We use allorigins.win as a free CORS proxy for Yahoo Finance API
-        const arabicaUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(API_URL_ARABICA)}`;
-        const robustaUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(API_URL_ROBUSTA)}`;
-
-        const [arabicaRes, robustaRes] = await Promise.all([
-            fetch(arabicaUrl),
-            fetch(robustaUrl)
-        ]);
-
-        if (arabicaRes.ok && robustaRes.ok) {
-            const arabicaProxy = await arabicaRes.json();
-            const robustaProxy = await robustaRes.json();
-
-            const arabicaData = JSON.parse(arabicaProxy.contents);
-            const robustaData = JSON.parse(robustaProxy.contents);
-
-            // Process Arabica
-            if (arabicaData.chart.result) {
-                const meta = arabicaData.chart.result[0].meta;
-                const prevClose = meta.chartPreviousClose || meta.previousClose;
-                updateCommodityUI('KC=F', meta.regularMarketPrice, meta.regularMarketPrice - prevClose, ((meta.regularMarketPrice - prevClose) / prevClose) * 100);
-            }
-
-            // Process Robusta
-            if (robustaData.chart.result) {
-                const meta = robustaData.chart.result[0].meta;
-                const prevClose = meta.chartPreviousClose || meta.previousClose;
-                updateCommodityUI('RC=F', meta.regularMarketPrice, meta.regularMarketPrice - prevClose, ((meta.regularMarketPrice - prevClose) / prevClose) * 100);
-            }
-
-            marketUpdatedEl.textContent = `Market Data: ${formatTime(new Date())}`;
-        }
-    } catch (error) {
-        console.error("Failed to fetch market data:", error);
-        marketUpdatedEl.textContent = "Data load failed (CORS/Network)";
-    }
-}
-
-/**
- * Fetch and Render News Data
- */
-async function fetchNewsData() {
+async function fetchAndRenderData() {
     newsContainerEl.innerHTML = `
         <div class="loading-state">
             <div class="spinner"></div>
-            <p>Loading latest articles...</p>
+            <p>Loading latest data...</p>
         </div>
     `;
 
@@ -132,16 +86,37 @@ async function fetchNewsData() {
 
         if (response && response.ok) {
             const data = await response.json();
-            renderNews(data.articles);
 
+            // 1. Render News
+            renderNews(data.articles);
             const updatedDate = new Date(data.updated_at);
             newsUpdatedEl.textContent = `News Generated: ${updatedDate.toLocaleDateString('ja-JP')} ${formatTime(updatedDate)}`;
+            marketUpdatedEl.textContent = `Market Data: ${updatedDate.toLocaleDateString('ja-JP')} ${formatTime(updatedDate)}`;
+
+            // 2. Render Market Data (if available in JSON)
+            try {
+                if (data.market_data) {
+                    if (data.market_data.arabica) {
+                        const meta = data.market_data.arabica;
+                        const prevClose = meta.chartPreviousClose || meta.previousClose;
+                        updateCommodityUI('KC=F', meta.regularMarketPrice, meta.regularMarketPrice - prevClose, ((meta.regularMarketPrice - prevClose) / prevClose) * 100);
+                    }
+                    if (data.market_data.robusta) {
+                        const meta = data.market_data.robusta;
+                        const prevClose = meta.chartPreviousClose || meta.previousClose;
+                        updateCommodityUI('RC=F', meta.regularMarketPrice, meta.regularMarketPrice - prevClose, ((meta.regularMarketPrice - prevClose) / prevClose) * 100);
+                    }
+                }
+            } catch (marketErr) {
+                console.warn("Could not parse market data from JSON: ", marketErr);
+            }
+
         } else {
             // Provide dummy data for visual testing if local json is not accessible
             renderDemoNews();
         }
     } catch (error) {
-        console.error("Failed to fetch news:", error);
+        console.error("Failed to fetch data:", error);
         renderDemoNews(); // Fallback for UI visualization
     }
 }
@@ -197,29 +172,28 @@ function renderDemoNews() {
     ];
     renderNews(demoArticles);
     newsUpdatedEl.textContent = "Data Source: Demo Mode (Waiting for GH Pages)";
+    marketUpdatedEl.textContent = "Data Source: Demo Mode";
 }
 
 /**
  * Initialize Widget
  */
 function init() {
-    fetchMarketData();
-    fetchNewsData();
+    fetchAndRenderData();
 
     refreshBtn.addEventListener('click', () => {
         const icon = refreshBtn.querySelector('svg');
         icon.style.animation = 'spin 0.5s linear';
 
-        fetchMarketData();
-        fetchNewsData();
+        fetchAndRenderData();
 
         setTimeout(() => {
             icon.style.animation = '';
         }, 500);
     });
 
-    // Auto refresh market data every 5 minutes
-    setInterval(fetchMarketData, 5 * 60 * 1000);
+    // Auto refresh data every 5 minutes (even though underlying JSON only changes daily)
+    setInterval(fetchAndRenderData, 5 * 60 * 1000);
 }
 
 // Start app
