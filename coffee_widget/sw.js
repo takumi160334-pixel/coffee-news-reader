@@ -1,4 +1,4 @@
-const CACHE_NAME = 'coffee-widget-v1';
+const CACHE_NAME = 'coffee-widget-v2';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
