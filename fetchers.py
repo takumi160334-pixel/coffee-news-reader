@@ -26,23 +26,30 @@ class RSSFetcher:
                 feed = feedparser.parse(url)
                 for entry in feed.entries:
                     published_parsed = entry.get('published_parsed')
-                    if published_parsed:
-                        dt = datetime.datetime(*published_parsed[:6], tzinfo=datetime.timezone.utc)
-                        if (now - dt).total_seconds() <= hours_ago * 3600:
-                            # Try to extract the full summary or description if available
-                            content = ""
-                            if 'content' in entry and len(entry.content) > 0:
-                                content = entry.content[0].value
-                            elif 'summary' in entry:
-                                content = entry.summary
-                                
-                            news_items.append({
-                                'title': entry.get('title', 'No Title'),
-                                'link': entry.get('link', ''),
-                                'source': feed.feed.get('title', 'Unknown Source'),
-                                'content': content,
-                                'type': 'rss'
-                            })
+                    # Fallback to current time if pubished_parsed is missing or malformed to ensure we still process the article
+                    try:
+                        if published_parsed:
+                            dt = datetime.datetime(*published_parsed[:6], tzinfo=datetime.timezone.utc)
+                        else:
+                            dt = now 
+                    except (TypeError, ValueError):
+                        dt = now
+                        
+                    if (now - dt).total_seconds() <= hours_ago * 3600:
+                        # Try to extract the full summary or description if available
+                        content = ""
+                        if 'content' in entry and len(entry.content) > 0:
+                            content = entry.content[0].value
+                        elif 'summary' in entry:
+                            content = entry.summary
+                            
+                        news_items.append({
+                            'title': entry.get('title', 'No Title'),
+                            'link': entry.get('link', ''),
+                            'source': feed.feed.get('title', 'Unknown Source'),
+                            'content': content,
+                            'type': 'rss'
+                        })
             except Exception as e:
                 print(f"⚠️ Error fetching from {url}: {e}")
                 
@@ -93,36 +100,48 @@ class GmailFetcher:
             messages = results.get('messages', [])
             
             for msg in messages:
-                # Need to fetch the full message payload
-                msg_full = self.service.users().messages().get(userId='me', id=msg['id'], format='full').execute()
-                payload = msg_full.get('payload', {})
-                headers = payload.get('headers', [])
-                
-                subject = "Unknown Subject"
-                sender = "Unknown Sender"
-                for header in headers:
-                    if header.get('name') == 'Subject':
-                        subject = header.get('value')
-                    if header.get('name') == 'From':
-                        sender = header.get('value')
-                        
-                # Attempt to extract body (usually base64 encoded)
-                body = ""
-                parts = payload.get('parts', [])
-                for part in parts:
-                    if part.get('mimeType') == 'text/plain':
-                        data = part.get('body', {}).get('data', '')
-                        if data:
-                            body = base64.urlsafe_b64decode(data).decode('utf-8')
-                            break # Prefer plain text over HTML for extraction
-                
-                news_items.append({
-                     'title': subject,
-                     'link': f"https://mail.google.com/mail/u/0/#inbox/{msg['id']}",
-                     'source': sender,
-                     'content': body,
-                     'type': 'gmail'
-                })
+                try:
+                    # Need to fetch the full message payload
+                    msg_full = self.service.users().messages().get(userId='me', id=msg['id'], format='full').execute()
+                    payload = msg_full.get('payload', {})
+                    headers = payload.get('headers', [])
+                    
+                    subject = "Unknown Subject"
+                    sender = "Unknown Sender"
+                    for header in headers:
+                        if header.get('name') == 'Subject':
+                            subject = header.get('value')
+                        if header.get('name') == 'From':
+                            sender = header.get('value')
+                            
+                    # Attempt to extract body (usually base64 encoded)
+                    body = ""
+                    parts = payload.get('parts', [])
+                    if not parts and payload.get('body', {}).get('data'):
+                         # Sometimes there are no parts, just a body structure
+                         parts = [payload]
+                         
+                    for part in parts:
+                        if part.get('mimeType') == 'text/plain':
+                            data = part.get('body', {}).get('data', '')
+                            if data:
+                                try:
+                                    body = base64.urlsafe_b64decode(data).decode('utf-8')
+                                except Exception as decode_err:
+                                    print(f"⚠️ Could not decode email body: {decode_err}")
+                                    body = "Error decoding email content."
+                                break # Prefer plain text over HTML for extraction
+                    
+                    news_items.append({
+                         'title': subject,
+                         'link': f"https://mail.google.com/mail/u/0/#inbox/{msg['id']}",
+                         'source': sender,
+                         'content': body,
+                         'type': 'gmail'
+                    })
+                except Exception as msg_err:
+                    print(f"⚠️ Error processing individual Gmail message {msg['id']}: {msg_err}")
+                    continue
         except Exception as e:
              print(f"⚠️ Error fetching from Gmail: {e}")
              

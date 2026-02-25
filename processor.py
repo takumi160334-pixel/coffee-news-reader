@@ -140,7 +140,10 @@ class NewsProcessor:
                 )
                 
                 # The response.parsed is an instance of the Pydantic schema
-                return response.parsed
+                if hasattr(response, 'parsed') and response.parsed:
+                    return response.parsed
+                else:
+                    raise ValueError("Gemini API returned a successful response, but 'parsed' was missing or empty.")
                 
             except Exception as e:
                 error_msg = str(e)
