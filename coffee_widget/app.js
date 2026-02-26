@@ -9,8 +9,6 @@ const API_URL_ROBUSTA = 'https://query1.finance.yahoo.com/v8/finance/chart/RC=F?
 // DOM Elements
 const arabicaPriceEl = document.getElementById('arabica-price');
 const arabicaChangeEl = document.getElementById('arabica-change');
-const robustaPriceEl = document.getElementById('robusta-price');
-const robustaChangeEl = document.getElementById('robusta-change');
 const marketUpdatedEl = document.getElementById('market-updated');
 
 const newsContainerEl = document.getElementById('news-container');
@@ -29,8 +27,11 @@ function formatTime(date) {
  */
 function updateCommodityUI(ticker, price, change, percent) {
     const isArabica = ticker === 'KC=F';
-    const priceEl = isArabica ? arabicaPriceEl : robustaPriceEl;
-    const changeEl = isArabica ? arabicaChangeEl : robustaChangeEl;
+    // If not Arabica, we do nothing in this simplified version
+    if (!isArabica) return;
+
+    const priceEl = arabicaPriceEl;
+    const changeEl = arabicaChangeEl;
 
     // Formatting
     const decimals = isArabica ? 2 : 0;
@@ -73,18 +74,29 @@ async function fetchAndRenderData() {
     try {
         let response;
         // Try multiple paths to support both production (GH Pages) and local dev
-        const possibleUrls = ['../news.json', '../public/news.json', './news.json'];
+        // GH Pages serves from root `/coffee_news_reader/news.json` typically or relative.
+        // We removed `../news.json` because it was causing the github pages deployed app to look for news from higher directory, failing, and showing demo.
+        const basePath = window.location.pathname.includes('coffee_news_reader') ? '/coffee_news_reader' : '';
+        const possibleUrls = [
+            `${basePath}/news.json`,
+            './news.json'
+        ];
 
+        let fetchSuccess = false;
         for (const url of possibleUrls) {
             try {
-                response = await fetch(url + "?t=" + new Date().getTime()); // cache buster
-                if (response.ok) break;
+                // cache buster is essential to prevent grabbing old cached responses
+                response = await fetch(url + "?t=" + new Date().getTime(), { cache: 'no-store' });
+                if (response.ok) {
+                    fetchSuccess = true;
+                    break;
+                }
             } catch {
                 continue;
             }
         }
 
-        if (response && response.ok) {
+        if (fetchSuccess && response) {
             const data = await response.json();
 
             // 1. Render News
@@ -103,15 +115,6 @@ async function fetchAndRenderData() {
                         document.getElementById('arabica-card').style.display = 'flex';
                     } else {
                         document.getElementById('arabica-card').style.display = 'none';
-                    }
-
-                    if (data.market_data.robusta) {
-                        const meta = data.market_data.robusta;
-                        const prevClose = meta.chartPreviousClose || meta.previousClose;
-                        updateCommodityUI('RC=F', meta.regularMarketPrice, meta.regularMarketPrice - prevClose, ((meta.regularMarketPrice - prevClose) / prevClose) * 100);
-                        document.getElementById('robusta-card').style.display = 'flex';
-                    } else {
-                        document.getElementById('robusta-card').style.display = 'none';
                     }
                 }
             } catch (marketErr) {

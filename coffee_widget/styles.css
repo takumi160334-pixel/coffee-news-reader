@@ -194,20 +194,27 @@ body {
 
 /* Price Cards */
 .price-cards {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-md);
+    display: flex;
+    justify-content: center;
+    /* Center the single card */
+    gap: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .price-card {
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-md);
+    background: rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 16px;
+    padding: 1.5rem;
+    flex: 1;
+    max-width: 400px;
+    /* Prevent it from getting too wide if space is available */
+    min-width: 250px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm);
-    transition: transform 0.2s ease, background 0.2s;
+    gap: 0.75rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .price-card:hover {
