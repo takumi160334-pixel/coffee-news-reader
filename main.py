@@ -101,16 +101,7 @@ def main():
     except Exception as e:
         print(f"⚠️ アラビカ種(KC=F)の市場データ取得に失敗しました: {e}")
 
-    # Robusta  
-    try:
-        req_r = urllib.request.Request('https://query1.finance.yahoo.com/v8/finance/chart/RC=F?interval=1d', headers=req_headers)
-        with urllib.request.urlopen(req_r, timeout=10) as res:
-            r_data = json.loads(res.read().decode())
-            if r_data.get('chart', {}).get('result'):
-                market_data["robusta"] = r_data['chart']['result'][0]['meta']
-        print("✅ ロブスタ種(RC=F)の市場データ取得に成功しました。")
-    except Exception as e:
-        print(f"⚠️ ロブスタ種(RC=F)の市場データ取得に失敗しました: {e}")
+    # Robusta support removed due to Yahoo Finance dropping the RC=F ticker.
 
     try:
         # Create a public directory if it doesn't exist
